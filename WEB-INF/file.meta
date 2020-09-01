@@ -35,6 +35,206 @@ done
 @@@@@@@@@@@
 
 
+
+
+
+
+
+
+
+[root@bastion ~]# cat /var/named/thkose.local.db
+$TTL 1W
+@			IN	SOA	ns1.ocp4.thkose.local.	root (
+					2020070202	; serial
+					3H		; refresh (3 hours)
+					30M		; retry (30 minutes)
+					2W		; expiry (2 weeks)
+					1W )		; minimum (1 week)
+			IN	NS	ns1.ocp4.thkose.local.
+;			IN	NS	ns2.ocp4.thkose.local.
+;
+;
+ns1			IN	A	192.168.120.110
+ns2			IN	A	192.168.120.111
+;
+bastion			IN	A	192.168.120.110
+;
+; The api points to the IP of your load balancer
+api			IN	A	192.168.120.111
+api-int			IN	A	192.168.120.111
+;
+; The wildcard also points to the load balancer
+*.apps			IN	A	192.168.120.111
+;
+; Create entry for the bootstrap host
+bootstrap		IN	A	192.168.120.120
+;
+; Create entries for the master hosts
+master01		IN	A	192.168.120.121
+master02		IN	A	192.168.120.122
+master03		IN	A	192.168.120.123
+;
+; Create entries for the worker hosts
+infra01			IN	A	192.168.120.124
+infra02			IN	A	192.168.120.125
+infra03			IN	A	192.168.120.126
+
+logging01		IN	A	192.168.120.127
+logging02		IN	A	192.168.120.128
+logging03		IN	A	192.168.120.129
+
+router01		IN	A	192.168.120.131
+router02		IN	A	192.168.120.132
+router03		IN	A	192.168.120.133
+
+worker01		IN	A	192.168.120.141
+worker02		IN	A	192.168.120.142
+worker03		IN	A	192.168.120.143
+worker04		IN	A	192.168.120.144
+
+;
+; The ETCd cluster lives on the masters...so point these to the IP of the masters
+etcd-0			IN	A	192.168.120.121
+etcd-1			IN	A	192.168.120.122
+etcd-2			IN	A	192.168.120.123
+;
+; Create entries for the other hosts
+registry		IN	A	192.168.120.111
+nas			IN	A	192.168.120.111
+
+; Create entries for the other hosts
+mregistry		IN	A	192.168.120.242
+
+;
+; The SRV records are IMPORTANT....make sure you get these right...note the trailing dot at the end...
+_etcd-server-ssl._tcp	IN	SRV	0 10 2380 etcd-0.ocp4.thkose.local.
+_etcd-server-ssl._tcp	IN	SRV	0 10 2380 etcd-1.ocp4.thkose.local.
+_etcd-server-ssl._tcp	IN	SRV	0 10 2380 etcd-2.ocp4.thkose.local.
+;
+;EOF
+
+
+[root@bastion ~]# cat /var/named/thkose.local.reverse.db
+$TTL 1W
+@	IN	SOA	ns1.ocp4.thkose.local.	root (
+			2020070202	; serial
+			3H		; refresh (3 hours)
+			30M		; retry (30 minutes)
+			2W		; expiry (2 weeks)
+			1W )		; minimum (1 week)
+	IN	NS	ns1.ocp4.thkose.local.
+;
+; syntax is "last octet" and the host must have fqdn with trailing dot
+110     IN      PTR     bastion.ocp4.thkose.local.
+
+121	IN	PTR	master01.ocp4.thkose.local.
+122	IN	PTR	master02.ocp4.thkose.local.
+123	IN	PTR	master03.ocp4.thkose.local.
+;
+120	IN	PTR	bootstrap.ocp4.thkose.local.
+;
+111	IN	PTR	api.ocp4.thkose.local.
+111	IN	PTR	api-int.ocp4.thkose.local.
+;
+124	IN	PTR	infra01.ocp4.thkose.local.
+125	IN	PTR	infra02.ocp4.thkose.local.
+126	IN	PTR	infra03.ocp4.thkose.local.
+127	IN	PTR	logging01.ocp4.thkose.local.
+128	IN	PTR	logging02.ocp4.thkose.local.
+129	IN	PTR	logging03.ocp4.thkose.local.
+131	IN	PTR	router01.ocp4.thkose.local.
+132	IN	PTR	router02.ocp4.thkose.local.
+133	IN	PTR	router03.ocp4.thkose.local.
+141	IN	PTR	worker01.ocp4.thkose.local.
+142	IN	PTR	worker02.ocp4.thkose.local.
+143	IN	PTR	worker03.ocp4.thkose.local.
+144	IN	PTR	worker04.ocp4.thkose.local.
+;
+111	IN	PTR	register.ocp4.thkose.local.
+111	IN	PTR	nas.ocp4.thkose.local.
+;
+;EOF
+
+
+
+[root@bastion ~]# cat /etc/named.conf
+//
+// named.conf
+//
+// Provided by Red Hat bind package to configure the ISC BIND named(8) DNS
+// server as a caching only nameserver (as a localhost DNS resolver only).
+//
+// See /usr/share/doc/bind*/sample/ for example named configuration files.
+//
+
+options {
+	listen-on port 53 { any; };
+	listen-on-v6 port 53 { ::1; };
+	directory 	"/var/named";
+	dump-file 	"/var/named/data/cache_dump.db";
+	statistics-file "/var/named/data/named_stats.txt";
+	memstatistics-file "/var/named/data/named_mem_stats.txt";
+	allow-query     { any; };
+
+	/*
+	 - If you are building an AUTHORITATIVE DNS server, do NOT enable recursion.
+	 - If you are building a RECURSIVE (caching) DNS server, you need to enable
+	   recursion.
+	 - If your recursive DNS server has a public IP address, you MUST enable access
+	   control to limit queries to your legitimate users. Failing to do so will
+	   cause your server to become part of large scale DNS amplification
+	   attacks. Implementing BCP38 within your network would greatly
+	   reduce such attack surface
+	*/
+	recursion yes;
+
+	/* Fowarders */
+	forward only;
+	forwarders { 10.68.5.26; 8.8.8.8; };
+
+	dnssec-enable yes;
+	dnssec-validation no;
+
+	managed-keys-directory "/var/named/dynamic";
+
+	pid-file "/run/named/named.pid";
+	session-keyfile "/run/named/session.key";
+
+	/* https://fedoraproject.org/wiki/Changes/CryptoPolicy */
+	/* include "/etc/crypto-policies/back-ends/bind.config"; */
+};
+
+logging {
+        channel default_debug {
+                file "data/named.run";
+                severity dynamic;
+        };
+};
+
+zone "." IN {
+	type hint;
+	file "named.ca";
+};
+
+########### Add what's between these comments ###########
+zone "ocp4.thkose.local" IN {
+	type	master;
+	file	"thkose.local.db";
+};
+
+zone "120.168.192.in-addr.arpa" IN {
+	type	master;
+	file	"thkose.local.reverse.db";
+};
+########################################################
+
+include "/etc/named.rfc1912.zones";
+include "/etc/named.root.key";
+
+[root@bastion ~]#
+
+
+
 ##########################################################################################################
 ##  
 ##  PREPARE INSTALL RHCOS
