@@ -1,0 +1,154 @@
+#2 [[ HA-PROXY ]]
+
+##################################################################################################################
+# 2. LB(Haproxy)
+
+yum -y install haproxy
+systemctl enable haproxy
+systemctl start haproxy
+
+**************************************************
+/etc/haproxy/haproxy.cfg
+
+#---------------------------------------------------------------------
+# Global settings
+#---------------------------------------------------------------------
+
+global
+    log         127.0.0.1 local2
+
+    chroot      /var/lib/haproxy
+    pidfile     /var/run/haproxy.pid
+    maxconn     4000
+    user        haproxy
+    group       haproxy
+    daemon
+
+    # turn on stats unix socket
+    stats socket /var/lib/haproxy/stats
+
+#---------------------------------------------------------------------
+# common defaults that all the 'listen' and 'backend' sections will
+# use if not designated in their block
+#---------------------------------------------------------------------
+
+defaults
+    mode                    http
+    log                     global
+    option                  httplog
+    option                  dontlognull
+    option                  http-server-close
+    option                  forwardfor       except 127.0.0.0/8
+    option                  redispatch
+    retries                 3
+    timeout http-request    10s
+    timeout queue           1m
+    timeout connect         10s
+    timeout client          1m
+    timeout server          1m
+    timeout http-keep-alive 10s
+    timeout check           10s
+
+#listen stats :9000
+#    mode http
+#    stats enable
+#    stats url /
+
+#---------------------------------------------------------------------
+# static backend for serving up images, stylesheets and such
+#---------------------------------------------------------------------
+
+backend static
+    balance     roundrobin
+    server      static 127.0.0.1:4331 check
+
+#---------------------------------------------------------------------
+# round robin balancing between the various backends
+#---------------------------------------------------------------------
+
+frontend openshift-api-server
+    bind *:6443
+    default_backend openshift-api-server
+    mode tcp
+    option tcplog
+
+backend openshift-api-server
+    balance source
+    mode tcp
+
+    server bootstrap 10.67.166.243:6443 check
+
+    server master01  10.67.166.244:6443 check
+    server master02  10.67.166.245:6443 check
+    server master03  10.67.166.246:6443 check
+
+frontend machine-config-server
+    bind *:22623
+    default_backend machine-config-server
+    mode tcp
+    option tcplog
+
+backend machine-config-server
+    balance source
+    mode tcp
+
+    server bootstrap 10.67.166.243:22623 check
+
+    server master01  10.67.166.244:22623 check
+    server master02  10.67.166.245:22623 check
+    server master03  10.67.166.246:22623 check
+
+frontend ingress-http
+    bind *:80
+    default_backend ingress-http
+    mode tcp
+    option tcplog
+
+backend ingress-http
+    balance source
+    mode tcp
+
+    server router01  10.67.166.220:80 check
+    server router02  10.67.166.221:80 check
+    server router03  10.67.166.222:80 check
+
+
+ frontend ingress-https
+    bind *:443
+    default_backend ingress-https
+    mode tcp
+    option tcplog
+
+backend ingress-https
+    balance source
+    mode tcp
+
+    server router01  10.67.166.220:443 check
+    server router02  10.67.166.221:443 check
+    server router03  10.67.166.222:443 check
+
+**************************************************
+
+
+systemctl enable haproxy
+systemctl start haproxy
+
+semanage port -a -t http_port_t -p tcp 6443
+semanage port -a -t http_port_t -p tcp 22623
+
+firewall-cmd --permanent --add-port=22623/tcp
+firewall-cmd --permanent --add-port=6443/tcp
+firewall-cmd --permanent --add-service=https
+firewall-cmd --permanent --add-service=http
+firewall-cmd --add-port 22623/tcp --zone=internal --permanent
+firewall-cmd --add-port 6443/tcp --zone=internal --permanent
+firewall-cmd --add-service https --zone=internal --permanent
+firewall-cmd --add-service http --zone=internal --permanent
+firewall-cmd --add-port 6443/tcp --zone=external --permanent
+firewall-cmd --add-service https --zone=external --permanent
+firewall-cmd --add-service http --zone=external --permanent
+
+firewall-cmd --complete-reload
+
+#
+##################################################################################################################
