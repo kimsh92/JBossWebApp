@@ -271,3 +271,23 @@ https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.5/4.5.2/rhcos
 
 
 
+
+@ manifest, operator-registry
+oc adm catalog build \
+    --filter-by-os='linux/amd64' \
+    --appregistry-org redhat-operators \
+    --from=registry.redhat.io/openshift4/ose-operator-registry:v4.5 \
+    --filter-by-os="linux/amd64" \
+    --to=mregistry.ocp4.thkose.local:5000/olm/redhat-operators:v4.5 \
+    -a /data/pull-secret.json  \
+    --insecure
+	
+@ operator hub image pulling
+oc adm catalog mirror \
+    mregistry.ocp4.thkose.local:5000/olm/redhat-operators:v4.5 \
+    mregistry.ocp4.thkose.local:5000 \
+    -a /data/pull-secret.json
+
+    
+@@
+
