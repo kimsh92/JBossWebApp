@@ -1,0 +1,267 @@
+##########################################################################################################
+##  
+##  DHCP, PXE
+
+@@ dhcp
+yum install -y dhcp
+
+vim /etc/dhcp/dhcpd.conf
+
+-------------
+
+subnet 192.168.122.0 netmask 255.255.255.0 {
+    option routers 192.168.122.1;
+    option subnet-mask 255.255.255.0;
+    range dynamic-bootp 192.168.122.121 192.168.122.250;
+    option domain-name-servers 192.168.122.120;
+    default-lease-time 10000;
+    max-lease-time 50000;
+    next-server 192.168.122.120;
+    filename "pxelinux.0";
+}
+
+host bootstrap {
+    hardware ethernet 52:54:00:6b:05:4f;
+    fixed-address 192.168.122.130;
+    option host-name "bootstrap.ocp4.thkose.local";
+}
+
+host master01 {
+    hardware ethernet 52:54:00:4c:7e:fe;
+    fixed-address 192.168.122.131;
+    option host-name "master01.ocp4.thkose.local";
+}
+
+host master02 {
+    hardware ethernet 52:54:00:9d:1b:d6;
+    fixed-address 192.168.122.132;
+    option host-name "master02.ocp4.thkose.local";
+}
+
+host master03 {
+    hardware ethernet 52:54:00:d1:80:ff;
+    fixed-address 192.168.122.133;
+    option host-name "master03.ocp4.thkose.local";
+}
+
+host infra01 {
+    hardware ethernet 52:54:00:c5:e3:62;
+    fixed-address 192.168.122.134;
+    option host-name "infra01.ocp4.thkose.local";
+}
+
+-------------
+
+
+@@ PXEBOOT 
+yum install -y syslinux tftp tftp-server xinetd vsftpd
+
+mkdir /var/lib/tftpboot/pxelinux.cfg
+sed -i '/disable/ s/yes/no/' /etc/xinetd.d/tftp
+cp -r /usr/share/syslinux/* /var/lib/tftpboot
+
+vi /var/lib/tftpboot/pxelinux.cfg/default
+
+-------------
+
+default menu.c32
+prompt 0
+timeout 300
+ontimeout 2
+
+menu title OCP4.2 PXE Boot Menu
+
+label 1
+   menu label ^1 - Boot from bootstrap.ign
+   KERNEL http://192.168.122.121/rhcos/rhcos-4.2.0-x86_64-installer-kernel
+   APPEND ip=dhcp rd.neednet=1 initrd=http://192.168.122.121/rhcos/rhcos-4.2.0-x86_64-installer-initramfs.img console=tty0 console=ttyS0 coreos.inst=yes coreos.inst.install_dev=sda coreos.inst.image_url=http://192.168.122.121/rhcos/rhcos-4.2.0-x86_64-metal-bios.raw.gz coreos.inst.ignition_url=http://192.168.122.121/ignition/bootstrap.ign
+
+label 2
+   menu label ^2 - Boot from master.ign
+   KERNEL http://192.168.122.121/rhcos/rhcos-4.2.0-x86_64-installer-kernel
+   APPEND ip=dhcp rd.neednet=1 initrd=http://192.168.122.121/rhcos/rhcos-4.2.0-x86_64-installer-initramfs.img console=tty0 console=ttyS0 coreos.inst=yes coreos.inst.install_dev=sda coreos.inst.image_url=http://192.168.122.121/rhcos/rhcos-4.2.0-x86_64-metal-bios.raw.gz coreos.inst.ignition_url=http://192.168.122.121/ignition/master.ign
+
+label 3
+   menu label ^3 - Boot from worker.ign
+   KERNEL http://192.168.122.121/rhcos/rhcos-4.2.0-x86_64-installer-kernel
+   APPEND ip=dhcp rd.neednet=1 initrd=http://192.168.122.121/rhcos/rhcos-4.2.0-x86_64-installer-initramfs.img console=tty0 console=ttyS0 coreos.inst=yes coreos.inst.install_dev=sda coreos.inst.image_url=http://192.168.122.121/rhcos/rhcos-4.2.0-x86_64-metal-bios.raw.gz coreos.inst.ignition_url=http://192.168.122.121/ignition/worker.ign
+
+-------------
+
+---------------------------------------
+[root@bastion ~]# cat /var/lib/tftpboot/pxelinux.cfg/default
+default menu.c32
+ prompt 0
+ timeout 900
+ ONTIMEOUT
+ menu title ######## PXE Boot Menu ########
+ label 1
+ menu label ^1) Install Bootstrap Node
+ kernel rhcos/kernel
+ append initrd=rhcos/initramfs.img nomodeset rd.neednet=1 coreos.inst=yes coreos.inst.install_dev=sda coreos.inst.image_url=http://192.168.120.110:8080/install/bios.raw.gz coreos.inst.ignition_url=http://192.168.120.110:8080/ignition/bootstrap.ign
+ label 2
+ menu label ^2) Install Master Node
+ kernel rhcos/kernel
+ append initrd=rhcos/initramfs.img nomodeset rd.neednet=1 coreos.inst=yes coreos.inst.install_dev=sda coreos.inst.image_url=http://192.168.120.110:8080/install/bios.raw.gz coreos.inst.ignition_url=http://192.168.120.110:8080/ignition/master.ign
+ label 3
+ menu label ^3) Install Worker Node
+ kernel rhcos/kernel
+ append initrd=rhcos/initramfs.img nomodeset rd.neednet=1 coreos.inst=yes coreos.inst.install_dev=sda coreos.inst.image_url=http://192.168.120.110:8080/install/bios.raw.gz coreos.inst.ignition_url=http://192.168.120.110:8080/ignition/worker.ign
+--------------------------------------- 
+ 
+ 
+
+firewall-cmd --add-service tftp --zone=internal --perm
+firewall-cmd --add-port=69/tcp --zone=internal --perm
+firewall-cmd --add-port=69/udp --zone=internal --perm
+firewall-cmd --complete-reload
+
+firewall-cmd --add-service=tftp --permanent
+firewall-cmd --reload
+
+systemctl enable --now tftp
+systemctl enable --now xinetd
+systemctl enable --now dhcpd
+
+
+firewall-cmd --permanent --add-port=80/tcp
+firewall-cmd --permanent --add-port=443/tcp
+firewall-cmd --reload
+
+##
+##
+##########################################################################################################
+
+[root@bastion ocp-installer]# cat install-config.yaml
+apiVersion: v1
+baseDomain: thkose.local
+compute:
+- hyperthreading: Enabled
+  name: worker
+  replicas: 2
+controlPlane:
+  hyperthreading: Enabled
+  name: master
+  replicas: 3
+metadata:
+  name: ocp4
+networking:
+  clusterNetwork:
+  - cidr: 172.31.0.0/16
+    hostPrefix: 23
+  networkType: OpenShiftSDN
+  serviceNetwork:
+  - 172.30.0.0/16
+platform:
+  none: {}
+pullSecret: '{"auths":{"registry.ocp4.thkose.local:5000": {"auth": "YWRtaW46cmVkaGF0","email": "admin@thkose.local"}}}'
+sshKey: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC18uXjw+Wrlr1bhzd1xOHH2/aEeFz277ZUqE1GE3F2NyNAF07c+2Fj9HmnauvJNnfPCAILsqOJr9urpvDf+ZEsAR5xw30EjFbAsLFvQ5IuGft/P4rEyG+JYnxX2WSSKfYI0/yiejUMu4P5xT+UzqrWgeoGJQ08Uu/Gt5qJ6guB8392PIIU9z9/FpimWe0m/r0xnX0N/g4P4PYxqGVtbGud/7H/mzQJahKsHaU4G/5qcjiiFiY+TH+IzcAIriIi4tRwIWstN+A96mmbz7mFd9cC27yWe2uT6c+nrZtLZeHTlZtra0bIm6BVM7byrTwB1g8ejb/yv/ojprWzu5ntLQqi8+QLadEVQxp7HOv/ajT4MFTR6pWabId7KXYCpUb7VBfI9ogvabCCKeot5DE/IwnnH6wnktX2UIGCcTm60XXGzHF/t0zSQGK2nbdCRiyL60PXqmEh2M6p/cbnULRydiaPQ0u/s4Yhf8VZj7312Q75ehXXCfOpQPxWms7tJgsampU= root@bastion.ocp4.thkose.local'
+additionalTrustBundle: |
+   -----BEGIN CERTIFICATE-----
+   MIID0zCCArugAwIBAgIUBArsUMC6PggWlwkphVxMgfTBqyYwDQYJKoZIhvcNAQEL
+   BQAweDELMAkGA1UEBhMCS1IxDjAMBgNVBAgMBVNlb3VsMQ4wDAYDVQQHDAVTZW91
+   bDEVMBMGA1UECgwMUmVkSGF0IEtvcmVhMRQwEgYDVQQLDAtHUFMgU2VydmljZTEc
+   MBoGA1UEAwwTKi5vY3A0LnRoa29zZS5sb2NhbDAgFw0yMDA3MjMxNjI5MDNaGA8y
+   MTIwMDYyOTE2MjkwM1oweDELMAkGA1UEBhMCS1IxDjAMBgNVBAgMBVNlb3VsMQ4w
+   DAYDVQQHDAVTZW91bDEVMBMGA1UECgwMUmVkSGF0IEtvcmVhMRQwEgYDVQQLDAtH
+   UFMgU2VydmljZTEcMBoGA1UEAwwTKi5vY3A0LnRoa29zZS5sb2NhbDCCASIwDQYJ
+   KoZIhvcNAQEBBQADggEPADCCAQoCggEBAMdo7CsVMEInL7iXlXa0khiJzhaEqWmK
+   17/3iI21CXan7bcjRhzjxw0ld710EZMXRJcZmlibmDj3RdRhaiJA8eKzJ1VLXA8o
+   6QNOQjvEYtDqLSIt0Y2fTMnhqxJgAuLA6TF9V17baDtwAGt/PvspxBYMDm3n+kc5
+   ZsHUlw1GDkGSDsaPpb9ceQjQIXYDkZ711vukS09YrcT6455mDHGZpiEXtrKcWbtn
+   QSmdko8wcKZL92AYfhvmJ44VaM1l1SkmhzWmSJT1EM0VPB4qSZOoKWPNTjVeAZVR
+   TZKJdhBq8ZqF/MbfLApAdI3ZBfm1VayB5Gd5MzfJ/BYIx6X0TJiyELUCAwEAAaNT
+   MFEwHQYDVR0OBBYEFPYsrLlofztIkIs5duwtqgNK2tfjMB8GA1UdIwQYMBaAFPYs
+   rLlofztIkIs5duwtqgNK2tfjMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQEL
+   BQADggEBAGLUS3nLBjphpa1tBoav6XTF//HToPn4pTPaExy6zWfFrb5x+nAXKd9p
+   BzBHZLc9sKFYnkAIEqRlcoTRkYgJUiAazLisGJvvR6hWQHmpT06XGkVlNOmA9ve+
+   O412ZT2qZQNlC/N+hF/YUY+W7f9u56JR50XBp+/+0bNuwprWS40WtI4t6J4UbUfo
+   s+mCgjj/Thpun98o2oBrYstdsmkKUIUNh2FLndMN5OO9JOERqLbLnX9Kzb6KAqLT
+   yNZTcV8Jxuh1ZPGIZClFEcrHgc9W0LC2woojWl+om7Z1ux7E6FOQllha69TcTEoA
+   t9tOzU0goKFqatBRQ62N4H+kzojF/y0=
+   -----END CERTIFICATE-----
+imageContentSources:
+- mirrors:
+  - registry.ocp4.thkose.local:5000/ocp4/openshift4
+  source: quay.io/openshift-release-dev/ocp-release
+- mirrors:
+  - registry.ocp4.thkose.local:5000/ocp4/openshift4
+  source: quay.io/openshift-release-dev/ocp-v4.0-art-dev
+  
+##########################################################################################################
+##  
+##  OPENSHIFT INSTALL
+
+echo -n 'admin:redhat' | base64 -w0
+cat ./pull-secret.text | jq .  > pull-secret.json
+cat ./pull-secret.json | jq -c > pull-secret-trim.json
+
+@@ manifest
+./openshift-install create manifests --dir=/root/ocp-install
+
+@@ ignition
+./openshift-install create ignition-configs --dir=/root/ocp-install
+
+@@ rhcos & openshift install
+./openshift-install --dir=/root/ocp-install wait-for bootstrap-complete --log-level=debug
+------------
+https://api.ocp4.lab.io:6443/version?timeout=32s: EOF 
+INFO API v1.14.6+2e5ed54 up                       
+INFO Waiting up to 30m0s for bootstrapping to complete...
+
+  ===> boostrap 준비가 완료되면, master, worker 를 차례로 구동하여 부팅시작
+
+@@
+# csr 확인, pending 시 approve
+$ export KUBECONFIG=/root/ocp-install/auth/kubeconfig
+$ oc adm certificate approve csr_name
+
+@@ csr pending 유무 확인
+[root@bastion auth]# oc get csr
+NAME        AGE   REQUESTOR                                                                   CONDITION
+csr-8ccg8   71s   system:serviceaccount:openshift-machine-config-operator:node-bootstrapper   Approved,Issued
+csr-9b4qn   52s   system:serviceaccount:openshift-machine-config-operator:node-bootstrapper   Approved,Issued
+csr-bj9hr   48s   system:node:master-0.ocp4.lab.io                                            Approved,Issued
+csr-c5tqn   72s   system:serviceaccount:openshift-machine-config-operator:node-bootstrapper   Approved,Issued
+csr-dqj48   58s   system:node:master-2.ocp4.lab.io                                            Approved,Issued
+csr-nvkbt   37s   system:node:master-1.ocp4.lab.io                                            Approved,Issued
+
+@@ clusteroperators 상태 확인, AVAILABLE이 모두 True상태가 되야함
+[root@bastion auth]# oc get clusteroperators
+NAME                                       VERSION   AVAILABLE   PROGRESSING   DEGRADED   SINCE
+cloud-credential                           4.2.0     True        False         False      6m20s
+dns                                        4.2.0     True        False         False      5m55s
+insights                                   4.2.0     True        False         False      5m45s
+kube-apiserver                                       False       True          True       5m49s
+kube-controller-manager                    4.2.0     True        False         False      2m45s
+kube-scheduler                             4.2.0     True        True          True       2m2s
+machine-api                                4.2.0     True        False         False      6m38s
+machine-config                             4.2.0     True        False         False      5m29s
+network                                    4.2.0     True        False         False      2m59s
+openshift-apiserver                        4.2.0     Unknown     Unknown       True       5m54s
+openshift-controller-manager               4.2.0     True        False         False      3m27s
+operator-lifecycle-manager                 4.2.0     True        True          False      4m20s
+operator-lifecycle-manager-catalog         4.2.0     True        True          False      4m20s
+operator-lifecycle-manager-packageserver             False       True          False      4m20s
+service-ca                                 4.2.0     True        False         False      5m41s
+
+
+@@ completing install -- boostrap complete 후 설치 마무리
+
+ ./openshift-install --dir=/root/ocp-install wait-for install-complete
+INFO Waiting up to 30m0s for the cluster at https://api.ocp4.thkose.local:6443 to initialize...
+
+
+INFO Waiting up to 10m0s for the openshift-console route to be created...
+INFO Install complete!
+INFO To access the cluster as the system:admin user when using 'oc', run 'export KUBECONFIG=/root/ocp-install/auth/kubeconfig'
+INFO Access the OpenShift web-console here: https://console-openshift-console.apps.ocp4.thkose.local
+INFO Login to the console with user: kubeadmin, password: JrYPH-CGTyo-ofFYY-Dh5Lt
+
+
+# 완료 후 haproxy에서 bootstrap 제거
+
+
+##
+##
+##########################################################################################################
