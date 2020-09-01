@@ -35,46 +35,38 @@ done
 @@@@@@@@@@@
 
 
+##########################################################################################################
+##  
+##  PREPARE INSTALL RHCOS
 
-[root@unicypasreg001 test]# cat ~/.screenrc
-# GNU Screen - main configuration file
-# All other .screenrc files will source this file to inherit settings.
-# Author: Christian Wills - cwills.sys@gmail.com
+wget --recursive --no-directories --no-parent https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.5/4.5.3/
 
-# Allow bold colors - necessary for some reason
-attrcolor b ".I"
+##
+# check for version latest-4.3
+# oc client, openshift install rhcos download
+##
 
-# Tell screen how to set colors. AB = background, AF=foreground
-termcapinfo xterm 'Co#256:AB=\E[48;5;%dm:AF=\E[38;5;%dm'
-
-# Enables use of shift-PgUp and shift-PgDn
-termcapinfo xterm|xterms|xs|rxvt ti@:te@
-
-# Erase background with current bg color
-defbce "on"
-
-# Enable 256 color term
-term xterm-256color
-
-# Cache 30000 lines for scroll back
-defscrollback 30000
-
-# New mail notification
-#backtick 101 30 15 $HOME/bin/mailstatus.sh
-
-hardstatus alwayslastline
-# Very nice tabbed colored hardstatus line
-hardstatus string '%{= Kd} %{= Kd}%-w%{= Kr}[%{= KW}%n %t%{= Kr}]%{= Kd}%+w %-= %{KG} %H%{KW}|%{KY}%101`%{KW}|%D %M %d %Y%{= Kc} %C%A%{-}'
-
-# change command character from ctrl-a to ctrl-b (emacs users may want this)
-#escape ^Bb
-
-# Hide hardstatus: ctrl-a f
-bind f eval "hardstatus ignore"
-# Show hardstatus: ctrl-a F
-bind F eval "hardstatus alwayslastline"
+export VERSION=4.5
+export BUILDNUMBER=$(curl -s https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest-4.5/release.txt | grep 'Name:' | awk '{print $NF}')
+echo ${BUILDNUMBER}
 
 
+wget https://mirror.openshift.com/pub/openshift-v4/clients/ocp/${BUILDNUMBER}/openshift-client-linux-${BUILDNUMBER}.tar.gz
+wget https://mirror.openshift.com/pub/openshift-v4/clients/ocp/${BUILDNUMBER}/openshift-install-linux-${BUILDNUMBER}.tar.gz
+
+tar -xzf openshift-client-linux-${BUILDNUMBER}.tar.gz -C /usr/local/bin/
+tar -xzf openshift-install-linux-${BUILDNUMBER}.tar.gz -C /usr/local/bin/
+
+wget --recursive --no-directories --no-parent https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/${VERSION}/${BUILDNUMBER}/
+
+
+
+wget -O ocp4-upi-helpernode-master.zip https://github.com/wangzheng422/ocp4-upi-helpernode/archive/master.zip
+
+wget -O filetranspiler-master.zip https://github.com/wangzheng422/filetranspiler/archive/master.zip
+
+
+https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.5/4.5.2/rhcos-4.5.2-x86_64-installer.x86_64.iso
 
 
 
