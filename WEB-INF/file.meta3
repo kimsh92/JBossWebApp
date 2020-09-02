@@ -1,0 +1,38 @@
+
+
+
+
+[root@bastion ocp-installer]# ls -al /var/lib/tftpboot/rhcos/
+total 77972
+drwxr-xr-x. 2 root root       41 Jul  1 16:47 .
+drwxr-xr-x. 6 root root     4096 Jul 24 09:00 ..
+-r-xr-xr-x. 1 root root 71721043 Jul  1 16:47 initramfs.img
+-r-xr-xr-x. 1 root root  8110944 Jul  1 16:47 kernel
+
+
+
+[root@bastion ocp-installer]# ls -al /var/www/html/install/
+total 1748256
+drwxr-xr-x. 2 root root        72 Jul 24 13:58 .
+drwxr-xr-x. 4 root root        53 Jul 24 09:21 ..
+-rwxr-xr-x. 1 root root 895104623 Jul 24 13:58 metal.raw.gz
+-rwxrwxrwx. 1 root root 895104623 Jul 24 13:32 rhcos-4.5.2-x86_64-metal.x86_64.raw.gz
+
+[root@bastion ocp-installer]# cat /etc/yum.repos.d/rhel8.repo
+[rhel-8-for-x86_64-baseos-rpms]
+name=rhel-8-for-x86_64-baseos-rpms
+baseurl=http://192.168.120.241/repos/rhel-8-for-x86_64-baseos-rpms/
+enabled=1
+gpgcheck=0
+
+[rhel-8-for-x86_64-appstream-rpms]
+name=rhel-8-for-x86_64-appstream-rpms
+baseurl=http://192.168.120.241/repos/rhel-8-for-x86_64-appstream-rpms/
+enabled=1
+gpgcheck=0
+
+[ansible-2.9-for-rhel-8-x86_64-rpms]
+name=ansible-2.9-for-rhel-8-x86_64-rpms
+baseurl=http://192.168.120.241/repos/ansible-2.9-for-rhel-8-x86_64-rpms/
+enabled=1
+gpgcheck=0
