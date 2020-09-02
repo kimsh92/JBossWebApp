@@ -1,0 +1,104 @@
+
+Boot Menu -> Tab
+ip=<IP>::<GW>:<SUBNET>:<HOSTNAME>:<IF_NAME>:none
+nameserver=<NAMESERVER_IP>
+coreos.inst.install_dev=sda
+coreos.inst.image_url=http://192.168.120.110:8080/install/metal.raw.gz
+coreos.inst.ignition_url=http://192.168.120.110:8080/ignition/bootstrap.ign
+
+
+
+ip=192.168.120.120::192.168.120.1:255.255.255.0:bootstrap.dev.okcopenapi.local:ens192:none nameserver=192.168.120.110 coreos.inst.install_dev=sda coreos.inst.image_url=http://192.168.120.110:8080/install/metal.raw.gz coreos.inst.ignition_url=http://192.168.120.110:8080/ignition/bootstrap.ign 
+
+
+
+
+
+[[ install.yaml ]]
+
+apiVersion: v1
+baseDomain: okcopenapi.local 
+compute:
+- hyperthreading: Enabled   
+  name: worker
+  replicas: 2
+controlPlane:
+  hyperthreading: Enabled   
+  name: master 
+  replicas: 3 
+metadata:
+  name: dev
+networking:
+  clusterNetwork:
+  - cidr: 172.31.0.0/16 
+    hostPrefix: 23 
+  networkType: OpenShiftSDN
+  serviceNetwork: 
+  - 172.30.0.0/16
+platform:
+  none: {}
+pullSecret: '{"auths":{"devregistry.dev.okcopenapi.local:5000": {"auth": "YWRtaW46cmVkaGF0","email": "admin@okcopenapi.local"}}}'
+additionalTrustBundle: |
+   -----BEGIN CERTIFICATE-----
+   MIIGAzCCA+ugAwIBAgIJAJxgJxs4gl52MA0GCSqGSIb3DQEBCwUAMIGXMQswCQYD
+   VQQGEwJLUjEOMAwGA1UECAwFU2VvdWwxDjAMBgNVBAcMBVNlb3VsMQ8wDQYDVQQK
+   DAZSZWRIYXQxDzANBgNVBAsMBkFwcERldjEjMCEGA1UEAwwacmVnaXN0cnkub2Nw
+   NC50aGtvc2UubG9jYWwxITAfBgkqhkiG9w0BCQEWEmFkbWluQHRoa29zZS5sb2Nh
+   bDAeFw0yMDAxMTAxMTU0MTNaFw0zMDAxMDcxMTU0MTNaMIGXMQswCQYDVQQGEwJL
+   UjEOMAwGA1UECAwFU2VvdWwxDjAMBgNVBAcMBVNlb3VsMQ8wDQYDVQQKDAZSZWRI
+   YXQxDzANBgNVBAsMBkFwcERldjEjMCEGA1UEAwwacmVnaXN0cnkub2NwNC50aGtv
+   c2UubG9jYWwxITAfBgkqhkiG9w0BCQEWEmFkbWluQHRoa29zZS5sb2NhbDCCAiIw
+   DQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAKqwZMw1fYMFps4K38CwRSGY1SJC
+   n30D19Do4FPEyVIoq83DHJ7y+w2WMtizjMq5DCKjdlcsdcJVihcIn84VQxUlZHKX
+   igGs26vFr00oB6cOtjNDMvsYde1DvpBDmozkH/n+YR3G7OEUaxbMsQrkVpyFCH7w
+   qxUA7O4/+SmDY31h8DP16MkpWARGWRSVb1GFTo36VGGOseg2FeJBMQVf/6yRpBkI
+   loVd9pebsaPrpkp7cFU7OfLND6PqGUWb4sP4f8DmNgHgb18+m9ND8jASRq1qDcTR
+   SPPtDPOZTonWJCCA0tnt8zwyYf6h08A8/ha+cp6uDe7PfI6w6HVkRe01jd+JrKoc
+   4wFhF9dHYUim0+fB2Q/v+h2gmXO/P+t0zkgGoHfPobadwL1OHXINK665b6ME+waF
+   cKox39zBBnoT4Fvz7EsAmHRsLGaO54ey4nnkDZlJ9KY1p+ZYzorwwTKV/T9y5tMC
+   JVWl7w2339kL31xT3YYfQZUYNiCCuw3URk2bmWAF13YGBrr0mteOHMKLDHQx251P
+   1YVbFRKoZAxZPuLyCwzKGMdKlIzCliZQLZYnxMj9QhGTTw+hMpz7uVjcdJ3v7D55
+   L8YstWbFR7N4WNfekYESnmy2LRzFNCrmUv1v/fckAszKJaUxLvUgBoqnJeiFUd+/
+   EUtaipbNP78WselpAgMBAAGjUDBOMB0GA1UdDgQWBBQ/qEJExp4Ex37FunwiA2se
+   s5BAUzAfBgNVHSMEGDAWgBQ/qEJExp4Ex37FunwiA2ses5BAUzAMBgNVHRMEBTAD
+   AQH/MA0GCSqGSIb3DQEBCwUAA4ICAQApUmCyt2+aBefaGxcFySnZZ6/QyrsmSJPa
+   J7+la3ZY8UKZV+FZLdy67aw64BqKkNzXQUf6jkewSypstIHsQFQ7MpFcF2n0VhLg
+   TPAtagbFyBqfNlkaPQiGi/jRdLWcA2HXpZgUy6ozHDNmB6nD11/kTU4dxjYm26CN
+   v2Ir33iqb63h4wWkcfsirwGaKZOxwqPQeXgiuafz8BLYfN8dHp+KnOICkcVPPWfb
+   9X5Th4Mcza9oaKQ+YPhK812qkrJGMN73bFlJ38yn6+7BR3yHrys02mEo7FmwZtDi
+   9mpq6MsWJOm1Scd2n4tWJM8ePz7ZVhL/mrQlQ7AFb0aXufkn7XW3/Iu4kIyduzyL
+   0yyaD2eMTyQjizQQJM88mqTUw7pix8jLqVH0CZ9tWFtVpTCczACV4fyiYXpAsG79
+   haqSFeORd7UQIuN+XwH2T5F7dxih3LrObNfuunJqmVFYLOIMIzZb773YRt4P4CE5
+   uf1yALJ3gHjbuDmz04DiqOSfEPhb7a6BRcJdebhm7KV09RgBCOXr0kMpjaDEJAK1
+   ywaRgCk+QDYHB8qv0UB3tf32JnRAOPKV93JYGHbxadUQFd/8aFPlAYJgfcH+DID5
+   S4rMYefAEGLZTKbSRlhxcMuFgPhLvElonskHqxq5dmfCgrptCOBgbskzTaqfRJrg
+   K32WWK6JHQ==
+   -----END CERTIFICATE-----
+imageContentSources:
+- mirrors:
+  - devregistry.dev.okcopenapi.local:5000/ocp4/openshift4
+  source: quay.io/openshift-release-dev/ocp-release
+- mirrors:
+  - devregistry.dev.okcopenapi.local:5000/ocp4/openshift4
+  source: quay.io/openshift-release-dev/ocp-v4.0-art-dev
+
+
+./openshift-install create manifests --dir=/root/ocp-install
+
+./openshift-install create ignition-configs --dir=/root/ocp-install
+
+# csr 확인, pending 시 approve
+$ export KUBECONFIG=/root/ocp-install/auth/kubeconfig
+$ oc adm certificate approve csr_name
+
+  "storage": {
+    "files": [
+      {
+        "path": "/etc/chrony.conf",
+        "filesystem": "root",
+        "mode": 420,
+        "contents": {
+          "source": "data:text/plain;charset=utf-8;base64:,c2VydmVyIDE5Mi4xNjguMTIwLjI0MSBpYnVyc3QKZHJpZnRmaWxlIC92YXIvbGliL2Nocm9ueS9kcmlmdAptYWtlc3RlcCAxLjAgMwpydGNzeW5jCmxvZ2RpciAvdmFyL2xvZy9jaHJvbnkKa2V5ZmlsZSAvZXRjL2Nocm9ueS5rZXlzCg=="
+        }
+      }
+    ]
