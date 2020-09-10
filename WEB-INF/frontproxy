@@ -1,0 +1,50 @@
+##########################################################################
+## Internet proxy
+##########################################################################
+Listen 8080
+
+#<VirtualHost *:8080>
+#  ProxyPreserveHost On
+#  ProxyRequests On
+#  ProxyVia On
+#
+#  SSLProxyEngine On
+#
+#  ProxyPass        / https://www.google.com/
+#  ProxyPassReverse / https://www.google.com/
+#
+#  <Location />
+#    Order Deny,Allow
+#    Deny from all
+#    Allow from 192.168.120.0/24
+#  </Location>
+#
+#  ErrorLog logs/ssl_error_log
+#  TransferLog logs/ssl_access_log
+#</VirtualHost>
+
+## 파일에 추가
+<VirtualHost *:8080>
+  ProxyRequests On
+  ProxyVia On
+
+  SSLProxyEngine On
+
+  ProxyPass        / https://www.google.com/
+  ProxyPassReverse / https://www.google.com/
+
+  ErrorLog logs/ssl_error_log
+  TransferLog logs/ssl_access_log
+</VirtualHost>
+
+
+
+
+
+
+## proxy
+yum install mod_ssl
+setsebool -P httpd_can_network_connect 1
+
+
+
