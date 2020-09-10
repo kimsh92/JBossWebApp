@@ -1,0 +1,9 @@
+
+
+
+skopeo copy --all docker://registry.redhat.io/openshift4/ose-cluster-logging-operator@sha256:129ff8e16de60d64abcdb05af7da6324bc7a9466d37f330b28942e6048e28846 docker://mregistry.ocp4.thkose.local:5000/openshift4/ose-cluster-logging-operator
+
+
+oc image mirror -a /data/pull-secret.json registry.redhat.io/openshift4/ose-cluster-logging-operator@sha256:129ff8e16de60d64abcdb05af7da6324bc7a9466d37f330b28942e6048e28846 mregistry.ocp4.thkose.local:5000/openshift4/ose-cluster-logging-operator
+
+
